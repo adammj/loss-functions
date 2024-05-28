@@ -1,4 +1,4 @@
-# loss-functions
+# Loss functions used in "Expert-level sleep staging using an electrocardiography-only feed-forward neural network"
 
 This repository contains the two loss functions that were created during the development of
 
