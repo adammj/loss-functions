@@ -1,17 +1,13 @@
-# Copyright (C) 2024  Adam M. Jones
+# Copyright (C) 2024 Adam M. Jones
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 
 """ This loss is the geometric mean of the TPR (True Positive Rate),
     and PPV (Positive Predictive Value).
@@ -22,7 +18,7 @@ import torch
 from torch import Tensor
 from torch.nn.modules.loss import _WeightedLoss
 
-default_epsilon = 0.0001
+DEFAULT_EPSILON = 0.0001
 
 
 class GeomeanTPRPPV(_WeightedLoss):
@@ -34,7 +30,7 @@ class GeomeanTPRPPV(_WeightedLoss):
     causing the loss to jump to 1.
     the final_loss will be between epsilon (best) and 1.0 (worst)"""
 
-    def __init__(self, class_count: int, epsilon: float = default_epsilon):
+    def __init__(self, class_count: int, epsilon: float = DEFAULT_EPSILON):
         super(GeomeanTPRPPV, self).__init__()
 
         # tiny offset to prevent any issues with zeros
@@ -44,7 +40,7 @@ class GeomeanTPRPPV(_WeightedLoss):
 
     @staticmethod
     def calculate_loss(
-        confusion: Tensor, class_count: int, epsilon: float = default_epsilon
+        confusion: Tensor, class_count: int, epsilon: float = DEFAULT_EPSILON
     ) -> Tensor:
         """static method for just calculating the loss"""
 
