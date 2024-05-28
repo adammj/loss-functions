@@ -5,6 +5,8 @@ This repository contains the two loss functions that were created during the dev
 
 If you find this repository helpful, please cite our work.
 
+The main repository is here: <https://github.com/adammj/ecg-sleep-staging>
+
 ---
 
 Both loss functions assume that the final operation of the network is a softmax, which transforms the output into a probability for each of the N classes.
@@ -15,7 +17,7 @@ Both loss functions assume that the final operation of the network is a softmax,
 
 2. **GeomeanTPRPPV**: Geometric Mean of TPR and PPV.
 
-    This calculates the geometric mean of each of the True Positive Rates (TPR) and Positive Predictive Values (PPV) for each of the classes.
+    This calculates the geometric mean of the True Positive Rates (TPR) and Positive Predictive Values (PPV) for each of the classes.
 
 ---
 
