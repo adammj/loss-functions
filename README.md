@@ -1,4 +1,4 @@
-# Loss functions used in "Expert-level sleep staging using an electrocardiography-only feed-forward neural network"
+# Loss functions for imbalanced classification and/or where Cohen's kappa is the metric
 
 This repository contains the two loss functions that were created during the development of
 
@@ -9,6 +9,12 @@ If you find this repository helpful, please cite our work.
 The main repository is here: <https://github.com/adammj/ecg-sleep-staging>
 
 ---
+
+## Motivation
+
+These loss functions were designed for imbalanced classification problems, where it is not possible to oversample the minority classes or undersample the majority classes (please see the paper for more thorough explanation of this situation). Furthermore, most classification problems assume that accuracy is the desired metric, and therefore use cross-entropy as the loss function. However, for our use-case, Cohen's kappa is the correct metric (which is only loosely correlated with accuracy).
+
+Additionally, unlike some other loss functions designed for imbalanced classification, no class weight parameter is necessary.
 
 Both loss functions assume that the final operation of the network is a softmax, which transforms the output into a probability for each of the N classes.
 
@@ -21,6 +27,23 @@ Both loss functions assume that the final operation of the network is a softmax,
    This calculates the geometric mean of the True Positive Rates (TPR) and Positive Predictive Values (PPV) for each of the classes.
 
 ---
+
+## Comparisons against other loss functions
+
+For our final model, we substituted in several different loss functions in order to compare them against our loss function. We'd like to highlight that for the two functions where Overall kappa is slightly higher, their minority class (N1) performance is significantly worse. 
+
+| Loss function | Overall | Wake | N1 | N2 | N3 | REM |
+| --- | --- | --- | --- | --- | --- | --- |
+| Geometric Mean of Kappas (ours) | 0.726 | 0.862 | 0.373 | 0.671 | 0.703 | 0.805 |
+| Cross-entropy | 0.734 | 0.867 | 0.274 | 0.682 | 0.699 | 0.805 |
+| Cross-entropy (weighted) | 0.669 | 0.845 | 0.332 | 0.583 | 0.677 | 0.786 |
+| Focal loss | 0.732 | 0.862 | 0.297 | 0.679 | 0.703 | 0.801 |
+| Cohen’s kappa (overall) | 0.720 | 0.854 | 0.000 | 0.669 | 0.697 | 0.795 |
+| Ratio of ours to best | 99% | 99% | 100% | 98% | 100% | 100% |
+
+---
+
+## Additional details
 
 The GeomeanTPRPPV was used for a significant fraction of the hyperparameter search, and performed quite well. However, once I figured out how to calculate the class-wise kappas using a simple equation, I switched to GeomeanKappa. This is because, mathematically, it should be a little closer to the desired metric, Cohen's Kappa (which is the weighted average of the class-wise kappas).
 
