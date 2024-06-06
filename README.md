@@ -34,7 +34,7 @@ Both loss functions assume that the final operation of the network is a softmax,
 
 ## Comparisons against other loss functions
 
-For our final model, we substituted in several different loss functions in order to compare them against our loss function. We'd like to highlight that for the two functions where Overall kappa is slightly higher, their minority class (N1) performance is significantly worse.
+For our final model, we substituted in several different loss functions in order to compare them against our loss function. We'd like to highlight that for the two functions where Overall kappa is slightly higher (+1%), their minority class (N1) performance is significantly worse (-27%).
 
 The table gives the kappa for each sleep stage and loss function pair.
 
