@@ -73,7 +73,7 @@ class GeomeanKappa(_WeightedLoss):
         return final_loss
 
     def forward(
-        self, input_classes: Tensor, target_classes: Tensor, weights: Tensor | None
+        self, input: Tensor, target_classes: Tensor, weights: Tensor | None
     ) -> Tensor:
         """pytorch forward call"""
 
@@ -83,14 +83,14 @@ class GeomeanKappa(_WeightedLoss):
 
             # multiply the input by the weights
             # this will automatically ignore "bad" samples (with weight = 0)
-            input_classes = input_classes * weights
+            input = input * weights
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
         overall_confusion_list: list[Tensor] = []
         for i in range(self.class_count):
             overall_confusion_list += [
-                input_classes[target_classes == i].sum(0).unsqueeze(0)
+                input[target_classes == i].sum(0).unsqueeze(0)
             ]
         overall_confusion = torch.cat(overall_confusion_list, 0)
 
@@ -152,7 +152,7 @@ class GeomeanTPRPPV(_WeightedLoss):
         return final_loss
 
     def forward(
-        self, input_classes: Tensor, target_classes: Tensor, weights: Tensor | None
+        self, input: Tensor, target_classes: Tensor, weights: Tensor | None
     ) -> Tensor:
         """pytorch forward call"""
 
@@ -162,14 +162,14 @@ class GeomeanTPRPPV(_WeightedLoss):
 
             # multiply the input by the weights
             # this will automatically ignore "bad" samples (with weight = 0)
-            input_classes = input_classes * weights
+            input = input * weights
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
         overall_confusion_list: list[Tensor] = []
         for i in range(self.class_count):
             overall_confusion_list += [
-                input_classes[target_classes == i].sum(0).unsqueeze(0)
+                input[target_classes == i].sum(0).unsqueeze(0)
             ]
         overall_confusion = torch.cat(overall_confusion_list, 0)
 
