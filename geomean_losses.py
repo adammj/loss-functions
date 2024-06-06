@@ -17,7 +17,7 @@ import torch
 from torch import Tensor
 from torch.nn.modules.loss import _WeightedLoss
 
-# used for GeomeanTPRPPV
+# used for GeomeanTPRPPV to prevent division by zero or product of zero issues
 DEFAULT_EPSILON = 0.0001
 
 
