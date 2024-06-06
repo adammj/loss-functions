@@ -28,7 +28,7 @@ Both loss functions assume that the final operation of the network is a softmax,
 
    This calculates the geometric mean of the True Positive Rates ([TPR or sensitivity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity)) and Positive Predictive Values ([PPV or precision](https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values)) for each of the classes.
 
-   By doing so, it will tend to both increase the TPR (number of correctly classified instances divided by the total possible instances for reviewer 1 (rows)), and PPV (number of correctly classified instances, divided by all instances that reviewer 2 (columns) used the same class). In other words, it will simultaneously work to move all rows and columns to the diagonal.
+   By doing so, it will tend to both increase the TPR (number of correctly classified instances divided by the total possible instances for reviewer 1 (rows)), and PPV (number of correctly classified instances, divided by all instances that reviewer 2 (columns) used the same class). For example, with imbalanced classes, it will simultaneously work to correctly classify as many of the majority class as possible (minimizing off-diagonal counts in the rows), while minimizing the number of incorrect classifications that occur against the minority class (minimizing off-diagonal counts in the columns).
 
 ---
 
