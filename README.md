@@ -12,9 +12,9 @@ The main repository is here: <https://github.com/adammj/ecg-sleep-staging>
 
 ## Motivation
 
-These loss functions were designed for imbalanced classification problems, where it is not possible to oversample the minority classes or undersample the majority classes (please see the paper for a more thorough explanation of this situation). Furthermore, most classification problems assume that accuracy is the desired metric, and therefore use cross-entropy as the loss function. However, for our use-case, Cohen's kappa is the correct metric (which is only loosely correlated with accuracy).
+These loss functions were designed for imbalanced classification problems, where it is not possible to oversample the minority classes or undersample the majority classes (please see the paper for a more thorough explanation of this situation). Furthermore, most classification problems assume that accuracy is the desired metric, and therefore use [cross-entropy](https://en.wikipedia.org/wiki/Cross-entropy#Cross-entropy_loss_function_and_logistic_regression) as the loss function. However, for our use-case, [Cohen's kappa](https://en.wikipedia.org/wiki/Cohen%27s_kappa) is the correct metric (which is only loosely correlated with accuracy).
 
-Additionally, unlike some other loss functions designed for imbalanced classification, no class weight parameter is necessary.
+The [geometric mean](https://en.wikipedia.org/wiki/Geometric_mean) is used because it eliminates the need for a class weight. Normally, especially in highly imbalanced data, correctly classifying the majority class(es) will almost always be at the expense of the minority class(es).
 
 Both loss functions assume that the final operation of the network is a softmax, which transforms the output into a probability for each of the N classes.
 
@@ -22,15 +22,21 @@ Both loss functions assume that the final operation of the network is a softmax,
 
    This calculates the geometric mean of each of the class-wise kappas.
 
+   By doing so, it will tend to improve all of the class-wise kappas.
+
 2. **GeomeanTPRPPV**: Geometric Mean of TPR and PPV.
 
-   This calculates the geometric mean of the True Positive Rates (TPR) and Positive Predictive Values (PPV) for each of the classes.
+   This calculates the geometric mean of the True Positive Rates ([TPR or sensitivity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity)) and Positive Predictive Values ([PPV or precision](https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values)) for each of the classes.
+
+   By doing so, it will tend to both increase the TPR (number of correctly classified instances divided by the total possible instances for reviewer 1 (rows)), and PPV (number of correctly classified instances, divided by all instances that reviewer 2 (columns) used the same class). In other words, it will simultaneously work to move all rows and columns to the diagonal.
 
 ---
 
 ## Comparisons against other loss functions
 
 For our final model, we substituted in several different loss functions in order to compare them against our loss function. We'd like to highlight that for the two functions where Overall kappa is slightly higher, their minority class (N1) performance is significantly worse.
+
+The table gives the kappa for each sleep stage and loss function pair.
 
 | Loss function                   | Overall | Wake  | N1    | N2    | N3    | REM   |
 | ------------------------------- | ------- | ----- | ----- | ----- | ----- | ----- |
@@ -45,7 +51,7 @@ For our final model, we substituted in several different loss functions in order
 
 ## Additional details
 
-The GeomeanTPRPPV was used for a significant fraction of the hyperparameter search, and performed quite well. However, once I figured out how to calculate the class-wise kappas using a simple equation, I switched to GeomeanKappa. This is because, mathematically, it should be a little closer to the desired metric, Cohen's Kappa (which is the weighted average of the class-wise kappas).
+The GeomeanTPRPPV was used for a significant fraction of the hyperparameter search, and performed quite well. However, once I figured out how to calculate the class-wise kappas using a simple equation, I switched to GeomeanKappa. This is because, mathematically, it should be a little closer to the desired metric, [Cohen's kappa](https://en.wikipedia.org/wiki/Cohen%27s_kappa) (which is the weighted average of the class-wise kappas).
 
 The `calculate_loss` is a separate function, and the `loss_confusion` matrix is stored, to aid some calculations that are done elsewhere in my training code. However, the loss function is a drop-in replacement for any other PyTorch loss function.
 
