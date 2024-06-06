@@ -9,7 +9,7 @@
 # SOFTWARE.
 
 
-""" These are classification losses using the geometric mean.
+""" These are classification loss functions using the geometric mean.
 """
 
 
