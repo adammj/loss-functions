@@ -14,13 +14,13 @@ The main repository is here: <https://github.com/adammj/ecg-sleep-staging>
 
 These loss functions were designed for imbalanced classification problems, where it is not possible to oversample the minority classes or undersample the majority classes (please see the paper for a more thorough explanation of this situation). Furthermore, most classification problems assume that accuracy is the desired metric, and therefore use [cross-entropy](https://en.wikipedia.org/wiki/Cross-entropy#Cross-entropy_loss_function_and_logistic_regression) as the loss function. However, for our use-case, [Cohen's kappa](https://en.wikipedia.org/wiki/Cohen%27s_kappa) is the correct metric (which is only loosely correlated with accuracy).
 
-The [geometric mean](https://en.wikipedia.org/wiki/Geometric_mean) is used because it eliminates the need for a class weight. Normally, especially in highly imbalanced data, correctly classifying the majority class(es) will almost always be at the expense of the minority class(es).
+Normally, especially in highly imbalanced data, correctly classifying the majority class(es) will almost always be at the expense of the minority class(es). However, we use the [geometric mean](https://en.wikipedia.org/wiki/Geometric_mean) of the individual class performances (kappa, TPR, or PPV), which are all in the range of [0, 1] (_see below for kappa_). This has the effect of causing the loss function to balance competing ratios, instead of competing counts (which will always disfavor the minority).
 
 Both loss functions assume that the final operation of the network is a softmax, which transforms the output into a probability for each of the N classes.
 
 1. **GeomeanKappa**: Geometric Mean of Kappas (**used in paper**).
 
-   This calculates the geometric mean of each of the class-wise kappas.
+   This calculates the geometric mean of each of the class-wise kappas. The class-wise kappas are scaled using `(1 + k)/2`, so that the default kappa range is transformed from [-1, 1] to [0, 1].
 
    By doing so, it will tend to improve all of the class-wise kappas.
 
