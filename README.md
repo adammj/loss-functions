@@ -4,9 +4,12 @@ This repository contains the two loss functions that were created during the dev
 
 > Adam M. Jones, Laurent Itti, Bhavin R. Sheth, "Expert-level sleep staging using an electrocardiography-only feed-forward neural network," Computers in Biology and Medicine, 2024, doi: 10.1016/j.compbiomed.2024.108545
 
+(Link to paper: <https://doi.org/10.1016/j.compbiomed.2024.108545>.)
+
+
 If you find this repository helpful, please cite our work.
 
-The main repository is here: <https://github.com/adammj/ecg-sleep-staging>
+The main repository for the paper is here: <https://github.com/adammj/ecg-sleep-staging>
 
 ---
 
