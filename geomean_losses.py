@@ -35,11 +35,15 @@ class GeomeanKappa(_WeightedLoss):
     def calculate_loss(confusion: Tensor, class_count: int) -> Tensor:
         """static method for just calculating the loss"""
 
-        # sanity checks
-        assert class_count >= 2
-        assert confusion.size(0) == class_count
-        assert confusion.size(0) == confusion.size(1)
-        assert len(torch.where(confusion < 0)[0]) == 0
+        # input checks
+        if class_count < 2:
+            raise ValueError("class_count must be >= 2")
+        if confusion.size(0) != class_count:
+            raise ValueError("each confusion dimension must equal the class_count")
+        if confusion.size(0) != confusion.size(1):
+            raise ValueError("confusion shape must be square")
+        if len(torch.where(confusion < 0)[0]) != 0:
+            raise ValueError("confusion should contain no negative elements")
 
         # if the confusion matrix is all zeros, return 1.0
         if confusion.sum() == 0:
@@ -63,7 +67,7 @@ class GeomeanKappa(_WeightedLoss):
         # shift and scale the kappas from range [-1, 1] to the range [0, 1]
         kappas = (kappas + 1) / 2
 
-        # check kappas
+        # sanity check of kappas
         assert len(torch.where(kappas < 0)[0]) == 0
         assert len(torch.where(kappas > 1)[0]) == 0
 
@@ -123,11 +127,15 @@ class GeomeanTPRPPV(_WeightedLoss):
     ) -> Tensor:
         """static method for just calculating the loss"""
 
-        # sanity checks
-        assert class_count >= 2
-        assert confusion.size(0) == class_count
-        assert confusion.size(0) == confusion.size(1)
-        assert len(torch.where(confusion < 0)[0]) == 0
+        # input checks
+        if class_count < 2:
+            raise ValueError("class_count must be >= 2")
+        if confusion.size(0) != class_count:
+            raise ValueError("each confusion dimension must equal the class_count")
+        if confusion.size(0) != confusion.size(1):
+            raise ValueError("confusion shape must be square")
+        if len(torch.where(confusion < 0)[0]) != 0:
+            raise ValueError("confusion should contain no negative elements")
 
         # if the confusion matrix is all zeros, return 1.0
         if confusion.sum() == 0:
