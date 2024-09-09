@@ -91,12 +91,9 @@ class GeomeanKappa(_WeightedLoss):
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
-        overall_confusion_list: list[Tensor] = []
+        overall_confusion = torch.zeros((5, 5), dtype=input.dtype, device=input.device)
         for i in range(self.class_count):
-            overall_confusion_list += [
-                input[target_classes == i].sum(0).unsqueeze(0)
-            ]
-        overall_confusion = torch.cat(overall_confusion_list, 0)
+            overall_confusion[i, :] += input[target_classes == i].sum(0)
 
         # store a copy that can be used later.
         self.loss_confusion = overall_confusion.detach().clone()
@@ -174,12 +171,9 @@ class GeomeanTPRPPV(_WeightedLoss):
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
-        overall_confusion_list: list[Tensor] = []
+        overall_confusion = torch.zeros((5, 5), dtype=input.dtype, device=input.device)
         for i in range(self.class_count):
-            overall_confusion_list += [
-                input[target_classes == i].sum(0).unsqueeze(0)
-            ]
-        overall_confusion = torch.cat(overall_confusion_list, 0)
+            overall_confusion[i, :] += input[target_classes == i].sum(0)
 
         # store a copy that can be used later.
         self.loss_confusion = overall_confusion.detach().clone()
