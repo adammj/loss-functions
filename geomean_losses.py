@@ -9,9 +9,7 @@
 # SOFTWARE.
 
 
-""" These are classification loss functions using the geometric mean.
-"""
-
+"""These are classification loss functions using the geometric mean."""
 
 import torch
 from torch import Tensor
@@ -91,7 +89,9 @@ class GeomeanKappa(_WeightedLoss):
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
-        overall_confusion = torch.zeros((5, 5), dtype=input.dtype, device=input.device)
+        overall_confusion = torch.zeros(
+            (self.class_count, self.class_count), dtype=input.dtype, device=input.device
+        )
         for i in range(self.class_count):
             overall_confusion[i, :] += input[target_classes == i].sum(0)
 
@@ -171,7 +171,9 @@ class GeomeanTPRPPV(_WeightedLoss):
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
-        overall_confusion = torch.zeros((5, 5), dtype=input.dtype, device=input.device)
+        overall_confusion = torch.zeros(
+            (self.class_count, self.class_count), dtype=input.dtype, device=input.device
+        )
         for i in range(self.class_count):
             overall_confusion[i, :] += input[target_classes == i].sum(0)
 
