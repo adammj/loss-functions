@@ -81,11 +81,11 @@ class GeomeanKappa(_WeightedLoss):
 
         if weights is not None:
             # copy the weights across rows
-            weights = weights.unsqueeze(1).repeat(1, self.class_count)
+            weights = weights.unsqueeze(1).expand(1, self.class_count)
 
             # multiply the input by the weights
             # this will automatically ignore "bad" samples (with weight = 0)
-            input = input * weights
+            input *= weights
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
@@ -163,11 +163,11 @@ class GeomeanTPRPPV(_WeightedLoss):
 
         if weights is not None:
             # copy the weights across rows
-            weights = weights.unsqueeze(1).repeat(1, self.class_count)
+            weights = weights.unsqueeze(1).expand(1, self.class_count)
 
             # multiply the input by the weights
             # this will automatically ignore "bad" samples (with weight = 0)
-            input = input * weights
+            input *= weights
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
