@@ -17,8 +17,10 @@ from torch.nn.modules.loss import _WeightedLoss
 
 
 class GeomeanKappa(_WeightedLoss):
-    """Loss function takes the product of the kappa of each class.
-    The loss value will be between 0.0 (best) and 1.0 (worst)."""
+    """Loss function takes the geometric mean of all class-wise kappas.
+
+    The loss value will approximate 1.0 minus the overall kappa,
+    and will be between 0.0 (best) and 2.0 (worst)."""
 
     def __init__(self, class_count: int):
         super(GeomeanKappa, self).__init__()
@@ -39,12 +41,13 @@ class GeomeanKappa(_WeightedLoss):
             raise ValueError("confusion shape must be square")
         if len(torch.where(confusion < 0)[0]) != 0:
             raise ValueError("confusion should contain no negative elements")
+        if confusion.sum() <= 0:
+            raise ValueError("confusion sum should be > 0")
 
-        # normalize the confusion matrix of each batch independently
-        # add eps * classes to account for eps being added later to diagonal
+        # normalize the confusion matrix
+        # adjust sum to account for eps being added later to diagonal
         eps = torch.finfo(confusion.dtype).eps
-        confusion_sum = confusion.sum() + eps * class_count
-        confusion *= 1.0 / confusion_sum
+        confusion *= (1.0 - eps * class_count) / confusion.sum()
 
         # minimize numerical issues with empty rows or cols by adding eps to diagonal
         confusion += torch.eye(class_count, device=confusion.device) * eps
@@ -57,15 +60,17 @@ class GeomeanKappa(_WeightedLoss):
         # get all class-wise kappas
         kappas = 2.0 * (diag - cols * rows) / (cols + rows - 2.0 * cols * rows)
 
-        # fix any NaNs (happens when pe=1, which means both raters agree but either
-        # the class of interest or the collection of other classes is empty)
-        kappas[torch.isnan(kappas)] = 1.0
-
         # shift and scale the kappas from range [-1, 1] to the range [0, 1]
         kappas = (kappas + 1.0) / 2.0
 
+        # calculate the geometric mean of the kappas
+        kappas_gm = kappas.prod().pow(1.0 / class_count)
+
+        # shift and scale the geometric mean back to the range [-1, 1]
+        kappas_gm = (2.0 * kappas_gm) - 1.0
+
         # calculate the final loss
-        final_loss = 1.0 - kappas.prod().pow(1.0 / class_count)
+        final_loss = 1.0 - kappas_gm
 
         return final_loss
 
@@ -97,11 +102,12 @@ class GeomeanKappa(_WeightedLoss):
 
 
 class GeomeanTPRPPV(_WeightedLoss):
-    """Loss function takes the product of the True Positive Rates and the
-    Positive Predictive Values for each class. It approximates 1-(overall kappa),
-    with many fewer operations.
+    """Loss function takes the geometric mean of the True Positive Rates (TPR) and the
+    Positive Predictive Values (PPV) for all classes.
 
-    the final_loss will be between 0.0 (best) and 1.0 (worst)"""
+    It approximates 1-(overall kappa), with fewer operations.
+
+    The loss value will be between 0.0 (best) and 1.0 (worst)."""
 
     def __init__(self, class_count: int):
         super(GeomeanTPRPPV, self).__init__()
@@ -123,12 +129,13 @@ class GeomeanTPRPPV(_WeightedLoss):
             raise ValueError("confusion shape must be square")
         if len(torch.where(confusion < 0)[0]) != 0:
             raise ValueError("confusion should contain no negative elements")
+        if confusion.sum() <= 0:
+            raise ValueError("confusion sum should be > 0")
 
-        # normalize the confusion matrix of each batch independently
-        # add eps * classes to account for eps being added later to diagonal
+        # normalize the confusion matrix
+        # adjust sum to account for eps being added later to diagonal
         eps = torch.finfo(confusion.dtype).eps
-        confusion_sum = confusion.sum() + eps * class_count
-        confusion *= 1.0 / confusion_sum
+        confusion *= (1.0 - eps * class_count) / confusion.sum()
 
         # minimize numerical issues with empty rows or cols by adding eps to diagonal
         confusion += torch.eye(class_count, device=confusion.device) * eps
@@ -145,11 +152,11 @@ class GeomeanTPRPPV(_WeightedLoss):
         # combine the TPR and PPV
         intermediate = torch.cat((class_tpr, class_ppv))
 
-        # take the product of all elements
-        intermediate = intermediate.prod()
+        # calculate the geometric mean of the agreements
+        agreement_gm = intermediate.prod().pow(1.0 / (2.0 * class_count))
 
         # calculate the final loss
-        final_loss = 1.0 - intermediate.pow(1.0 / (2.0 * class_count))
+        final_loss = 1.0 - agreement_gm
 
         return final_loss
 
