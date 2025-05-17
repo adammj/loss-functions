@@ -47,7 +47,9 @@ class GeomeanKappa(_WeightedLoss):
         # normalize the confusion matrix
         # adjust sum to account for eps being added later to diagonal
         eps = torch.finfo(confusion.dtype).eps
-        confusion *= (1.0 - eps * class_count) / confusion.sum()
+
+        # don't modify confusion inplace
+        confusion = confusion * ((1.0 - eps * class_count) / confusion.sum())
 
         # minimize numerical issues with empty rows or cols by adding eps to diagonal
         confusion += torch.eye(class_count, device=confusion.device) * eps
@@ -85,7 +87,8 @@ class GeomeanKappa(_WeightedLoss):
 
             # multiply the input by the weights
             # this will automatically ignore "bad" samples (with weight = 0)
-            input *= weights
+            # don't modify input inplace
+            input = input * weights
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
@@ -135,7 +138,9 @@ class GeomeanTPRPPV(_WeightedLoss):
         # normalize the confusion matrix
         # adjust sum to account for eps being added later to diagonal
         eps = torch.finfo(confusion.dtype).eps
-        confusion *= (1.0 - eps * class_count) / confusion.sum()
+
+        # don't modify confusion inplace
+        confusion = confusion * ((1.0 - eps * class_count) / confusion.sum())
 
         # minimize numerical issues with empty rows or cols by adding eps to diagonal
         confusion += torch.eye(class_count, device=confusion.device) * eps
@@ -171,7 +176,8 @@ class GeomeanTPRPPV(_WeightedLoss):
 
             # multiply the input by the weights
             # this will automatically ignore "bad" samples (with weight = 0)
-            input *= weights
+            # don't modify input inplace
+            input = input * weights
 
         # build confusion from each target class
         # this will automatically ignore any padded classes (with target = -1)
