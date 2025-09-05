@@ -45,7 +45,7 @@ class GeomeanLoss(Module):
 
         # for lower_bound adjustment and tracking (only applicable for kappa and mcc)
         self.lower_bound: float = lower_bound
-        self.last_min_stat_list: list[float] = collections.deque(maxlen=100)  # type: ignore
+        self.last_min_stat_list = cast(list[float], collections.deque(maxlen=100))
         self.last_min_stat: float = 0.0
 
         # logging for external use
@@ -158,12 +158,12 @@ class GeomeanLoss(Module):
 
         else:  # self.statistic == "mcc"
             # get all class-wise mccs
-            num = diag * (1.0 + (diag - cols - rows)) - (cols - diag) * (rows - diag)
-            denom = torch.sqrt(cols * (1.0 - cols) * rows * (1.0 - rows))
-            class_mcc = num / denom
+            class_mccs = (
+                diag * (1.0 + (diag - cols - rows)) - (cols - diag) * (rows - diag)
+            ) / torch.sqrt(cast(Tensor, cols * (1.0 - cols) * rows * (1.0 - rows)))
 
             # store a copy that can be used later
-            self.last_min_stat = class_mcc.detach().min().item()
+            self.last_min_stat = class_mccs.detach().min().item()
 
             if auto_lower_bound_adjustment:
                 # track the recent last_min_stat values
@@ -182,10 +182,10 @@ class GeomeanLoss(Module):
 
             # shift and scale from range [-1, 1] to the range [0, 1]
             # as the geometric does not work with negative values
-            class_mcc = (class_mcc - current_lb) / (1.0 - current_lb)
+            class_mccs = (class_mccs - current_lb) / (1.0 - current_lb)
 
             # calculate the geometric mean of the mccs
-            mcc_gm = torch.exp(torch.log(class_mcc).mean())
+            mcc_gm = torch.exp(torch.log(class_mccs).mean())
 
             # shift and scale the geometric mean back to the range [-1, 1]
             mcc_gm = ((1.0 - current_lb) * mcc_gm) + current_lb
