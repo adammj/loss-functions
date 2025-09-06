@@ -11,7 +11,6 @@
 
 """This is classification loss function using the geometric mean of a statistic."""
 
-import collections
 from typing import cast
 
 import torch
@@ -20,18 +19,19 @@ from torch.nn import Module
 
 
 class GeomeanLoss(Module):
-    """Loss function computes the geometric mean of the given statistic.
+    """
+    Loss function computes the geometric mean of the given statistic.
 
     kappa: class-wise Cohen's kappas
-        The loss value will be between 0.0 and 2.0
 
     tprppv: class-wise True Positive Rates (TPR) and the Positive Predictive Values (PPV)
-        The loss value will be between 0.0 and 1.0
 
     mcc: class-wise Matthews correlation coefficients
-        The loss value will be between 0.0 and 2.0"""
 
-    def __init__(self, class_count: int, statistic: str, lower_bound: float = -1.0):
+    The loss value will be between 0.0 and 1.0
+    """
+
+    def __init__(self, class_count: int, statistic: str):
         super().__init__()  # type: ignore
 
         if class_count < 2:
@@ -43,13 +43,9 @@ class GeomeanLoss(Module):
         self.class_count = class_count
         self.statistic = statistic
 
-        # for lower_bound adjustment and tracking (only applicable for kappa and mcc)
-        self.lower_bound: float = lower_bound
-        self.last_min_stat_list = cast(list[float], collections.deque(maxlen=100))
-        self.last_min_stat: float = 0.0
-
         # logging for external use
         self.last_confusion: Tensor = torch.zeros(class_count, class_count)
+        self.last_min_stat: float = 0.0
         self.last_loss: float = 0.0
 
     def forward(
@@ -57,16 +53,8 @@ class GeomeanLoss(Module):
         input: Tensor,
         target_classes: Tensor,
         weights: Tensor | None,
-        auto_lower_bound_adjustment: bool = False,
     ) -> Tensor:
-        """pytorch forward call
-
-        If statistic is 'kappa' or 'mcc' and auto_lower_bound_adjustment == True, then
-        the function will try to slowly raise the lower_bound from -1.0 to 0.0. The
-        adjustment is a one-way ratchet, that will stop at 0.0.
-        This will allow the geometric mean to more appropriately weight the positive
-        values, while allowing for negative values early in the training.
-        """
+        """pytorch forward call"""
 
         if weights is not None:
             # copy the weights across rows
@@ -111,30 +99,11 @@ class GeomeanLoss(Module):
             # store a copy that can be used later
             self.last_min_stat = class_kappas.detach().min().item()
 
-            if auto_lower_bound_adjustment:
-                # track the recent last_min_stat values
-                self.last_min_stat_list.append(self.last_min_stat)
-
-                # if appropriate, then adjust the lower_bound
-                if len(self.last_min_stat_list) >= 10 and self.lower_bound < 0.0:
-                    recent_min = min(self.last_min_stat_list) - 0.05
-                    if (self.lower_bound + 0.01) < recent_min:
-                        # lower_bound can be at most 0.0
-                        self.lower_bound = min(self.lower_bound + 0.01, 0.0)
-
-            # even without allowing auto adjustment, the lower bound (lb)
-            # must prevent a 0 from being used in the geometric mean
-            current_lb = min(self.lower_bound, self.last_min_stat - eps)
-
-            # shift and scale from range [-1, 1] to the range [0, 1]
-            # as the geometric does not work with negative values
-            class_kappas = (class_kappas - current_lb) / (1.0 - current_lb)
+            # transform from range [-1, 1] to the range [0, 1]
+            class_kappas = smooth_transform(class_kappas)
 
             # calculate the geometric mean of the kappas
             kappa_gm = torch.exp(torch.log(class_kappas).mean())
-
-            # shift and scale the geometric mean back to the range [-1, 1]
-            kappa_gm = ((1.0 - current_lb) * kappa_gm) + current_lb
 
             # calculate the final loss
             final_loss = cast(Tensor, 1.0 - kappa_gm)
@@ -145,50 +114,31 @@ class GeomeanLoss(Module):
             class_ppv = diag / cols
 
             # concatenate the TPR and PPV
-            concat = torch.cat((class_tpr, class_ppv))
+            class_concat = torch.cat((class_tpr, class_ppv))
 
             # store a copy that can be used later
-            self.last_min_stat = concat.detach().min().item()
+            self.last_min_stat = class_concat.detach().min().item()
 
             # calculate the geometric mean of all the agreements
-            tprppv_gm = torch.exp(torch.log(concat).mean())
+            tprppv_gm = torch.exp(torch.log(class_concat).mean())
 
             # calculate the final loss
             final_loss = cast(Tensor, 1.0 - tprppv_gm)
 
         else:  # self.statistic == "mcc"
             # get all class-wise mccs
-            class_mccs = (
-                diag * (1.0 + (diag - cols - rows)) - (cols - diag) * (rows - diag)
-            ) / torch.sqrt(cast(Tensor, cols * (1.0 - cols) * rows * (1.0 - rows)))
+            class_mccs = (diag - cols * rows) / torch.sqrt(
+                cast(Tensor, cols * (1.0 - cols) * rows * (1.0 - rows))
+            )
 
             # store a copy that can be used later
             self.last_min_stat = class_mccs.detach().min().item()
 
-            if auto_lower_bound_adjustment:
-                # track the recent last_min_stat values
-                self.last_min_stat_list.append(self.last_min_stat)
-
-                # if appropriate, then adjust the lower_bound
-                if len(self.last_min_stat_list) >= 10 and self.lower_bound < 0.0:
-                    recent_min = min(self.last_min_stat_list) - 0.05
-                    if (self.lower_bound + 0.01) < recent_min:
-                        # lower_bound can be at most 0.0
-                        self.lower_bound = min(self.lower_bound + 0.01, 0.0)
-
-            # even without allowing auto adjustment, the lower bound (lb)
-            # must prevent a 0 from being used in the geometric mean
-            current_lb = min(self.lower_bound, self.last_min_stat - eps)
-
-            # shift and scale from range [-1, 1] to the range [0, 1]
-            # as the geometric does not work with negative values
-            class_mccs = (class_mccs - current_lb) / (1.0 - current_lb)
+            # transform from range [-1, 1] to the range [0, 1]
+            class_mccs = smooth_transform(class_mccs)
 
             # calculate the geometric mean of the mccs
             mcc_gm = torch.exp(torch.log(class_mccs).mean())
-
-            # shift and scale the geometric mean back to the range [-1, 1]
-            mcc_gm = ((1.0 - current_lb) * mcc_gm) + current_lb
 
             # calculate the final loss
             final_loss = cast(Tensor, 1.0 - mcc_gm)
@@ -197,3 +147,29 @@ class GeomeanLoss(Module):
         self.last_loss = final_loss.detach().item()
 
         return final_loss
+
+
+def smooth_transform(x: Tensor, transition: float = 0.066) -> Tensor:
+    """
+    This is designed to transform the range [-1, 1] to [0, 1], in the case where
+    values < 0 are unlikely, but still possible. And where having the positive
+    values being left alone is paramount.
+
+    Above the transition, keep original values.
+    And below, smoothly transition (both y and y') to a limit of 0.
+
+    A transition of 0.066 gives non-zero outputs for x >= -0.5058 (for float32).
+    Since, a kappa or mcc < -0.5 would be exceptionally unlikely, this is probably
+    a good compromise.
+    """
+
+    y = torch.where(
+        x >= transition,
+        x,
+        transition * (torch.tanh((x - transition) / transition) + 1.0),
+    )
+
+    # prevent any (unlikely) zeros from making it to log
+    y = torch.where(y > 0, y, torch.finfo(y.dtype).eps)
+
+    return y
